@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM node:22-alpine AS frontend-build
 WORKDIR /app
-COPY frontend/package.json ./
-RUN yarn install --network-timeout 1000000
+COPY frontend/package.json frontend/yarn.lock ./
+RUN yarn install --frozen-lockfile --network-timeout 1000000
 COPY frontend/webpack* frontend/tsconfig.json ./
 COPY frontend/assets assets
 COPY frontend/src src
@@ -38,14 +38,14 @@ WORKDIR /app
 RUN pip install --no-cache-dir poetry==1.8.3
 
 # Copy dependency files
-COPY backend/pyproject.toml ./
+COPY backend/pyproject.toml backend/poetry.lock* ./
 
 # Configure Poetry to create venv in /venv
 RUN poetry config virtualenvs.path /venv && \
     poetry config virtualenvs.in-project false
 
-# Install dependencies (will generate poetry.lock)
-RUN poetry lock --no-update && \
+# Install dependencies (generate lock if missing, otherwise use existing)
+RUN if [ ! -f poetry.lock ]; then poetry lock --no-update; fi && \
     poetry install --no-dev --no-ansi --no-interaction
 
 # Install additional deps (psycopg2-binary, python-jose for Auth0/OIDC)
