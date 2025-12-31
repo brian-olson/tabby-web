@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:12-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /app
 COPY frontend/package.json frontend/yarn.lock ./
 RUN yarn install --frozen-lockfile --network-timeout 1000000
@@ -10,7 +10,7 @@ COPY frontend/theme theme
 RUN yarn run build
 RUN yarn run build:server
 
-FROM node:12-alpine AS frontend
+FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY --from=frontend-build /app/build build
 COPY --from=frontend-build /app/build-server build-server
@@ -20,54 +20,77 @@ CMD ["npm", "start"]
 
 # ----
 
-FROM python:3.7-alpine AS build-backend
+FROM python:3.12-slim AS build-backend
 ARG EXTRA_DEPS
 
-RUN apk add build-base musl-dev libffi-dev openssl-dev mariadb-dev bash curl
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    libmariadb-dev \
+    libmariadb-dev-compat \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Rust (for python-cryptography)
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-ENV PATH /root/.cargo/bin:$PATH
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.8.3
 
-RUN pip install -U setuptools cryptography==37.0.4 poetry==1.1.7
+# Copy dependency files
 COPY backend/pyproject.toml backend/poetry.lock ./
-RUN poetry config virtualenvs.path /venv
-RUN poetry install --no-dev --no-ansi --no-interaction
-RUN poetry run pip install -U setuptools psycopg2-binary $EXTRA_DEPS
 
+# Configure Poetry to create venv in /venv
+RUN poetry config virtualenvs.path /venv && \
+    poetry config virtualenvs.in-project false
+
+# Install dependencies
+RUN poetry install --no-dev --no-ansi --no-interaction
+
+# Install additional deps (psycopg2-binary, python-jose for Auth0/OIDC)
+RUN poetry run pip install --no-cache-dir psycopg2-binary python-jose[cryptography] $EXTRA_DEPS
+
+# Copy application code
 COPY backend/manage.py backend/gunicorn.conf.py ./
 COPY backend/tabby tabby
 COPY --from=frontend /app/build /frontend
 
+# Build static assets and bundle Tabby version
 ARG BUNDLED_TABBY=1.0.187-nightly.1
-
 RUN FRONTEND_BUILD_DIR=/frontend /venv/*/bin/python ./manage.py collectstatic --noinput
 RUN APP_DIST_STORAGE=file:///app-dist /venv/*/bin/python ./manage.py add_version ${BUNDLED_TABBY}
 
 # ----
 
-FROM python:3.7-alpine AS backend
+FROM gcr.io/distroless/python3-debian12:nonroot AS backend
 
-ENV APP_DIST_STORAGE file:///app-dist
-ENV DOCKERIZE_VERSION v0.6.1
-ENV DOCKERIZE_ARCH amd64
-ARG TARGETPLATFORM
-RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; \
-    then export DOCKERIZE_ARCH=armhf; \
-    else export DOCKERIZE_ARCH=amd64; \
-    fi
-RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-$DOCKERIZE_ARCH-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-linux-$DOCKERIZE_ARCH-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-linux-$DOCKERIZE_ARCH-$DOCKERIZE_VERSION.tar.gz
+ENV APP_DIST_STORAGE=file:///app-dist
+ENV PYTHONUNBUFFERED=1
 
-RUN apk add mariadb-connector-c gcc
-
-COPY --from=build-backend /app /app
-COPY --from=build-backend /app-dist /app-dist
+# Copy Python virtual environment
 COPY --from=build-backend /venv /venv
 
-COPY backend/start.sh backend/manage.sh /
-RUN chmod +x /start.sh /manage.sh
-CMD ["/start.sh"]
+# Copy application
+COPY --from=build-backend /app /app
+
+# Copy app-dist
+COPY --from=build-backend /app-dist /app-dist
+
+# Copy MariaDB client libraries
+COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libmariadb.so.3 /usr/lib/x86_64-linux-gnu/
+COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/
+COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/
+
+# Copy entrypoint script
+COPY backend/entrypoint.py /app/
+
+WORKDIR /app
+
+# Set Python path to find venv
+ENV PATH="/venv/lib/python3.12/site-packages:$PATH"
+ENV PYTHONPATH="/venv/lib/python3.12/site-packages"
+
+# Run as non-root user (distroless default)
+USER nonroot
+
+ENTRYPOINT ["/venv/bin/python3.12", "/app/entrypoint.py"]

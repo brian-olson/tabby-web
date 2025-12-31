@@ -16,9 +16,37 @@ Tabby Web serves the [Tabby Terminal](https://github.com/Eugeny/tabby) as a web 
 
 # Requirements
 
-* Python 3.7+
+## Runtime Requirements
+
+* **Python 3.12+** (updated from 3.7 for security and performance)
+* **Node.js 22 LTS** (for frontend)
 * A database server supported by Django (MariaDB, Postgres, SQLite, etc.)
 * Storage for distribution files - local, S3, GCS or others supported by `fsspec`
+
+## Docker Build Requirements
+
+Building the Docker image requires significant resources due to the frontend compilation:
+
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| RAM | 2 GB | 4 GB |
+| CPU | 2 cores | 4 cores |
+| Disk | 5 GB | 10 GB |
+
+**Note:** The frontend build (webpack/Angular) is memory-intensive. If building on constrained systems (like Oracle Cloud Always Free tier with 1GB RAM), consider:
+- Using pre-built images from a CI/CD pipeline
+- Building on a larger machine and pushing to a registry
+- Adding swap space (not recommended for production)
+
+## Security Features
+
+This version uses:
+- **Google Distroless** base images for minimal attack surface
+- **Non-root user** execution
+- **Updated dependencies** with all known CVEs patched:
+  - Django 5.1 (previously 3.2 EOL)
+  - cryptography 44.x (previously 37.0.4 with 5+ CVEs)
+  - Twisted 24.x (previously 20.3.0 with HTTP smuggling CVEs)
 
 # Quickstart (using `docker-compose`)
 
