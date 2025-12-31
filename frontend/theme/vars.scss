@@ -26,6 +26,34 @@ $semi: rgba(0,0,0, .5);
 
 @import "~bootstrap/scss/functions";
 
+$spacer: 1rem;
+$spacers: (
+  0: 0,
+  1: $spacer * .25,
+  2: $spacer * .5,
+  3: $spacer,
+  4: $spacer * 1.5,
+  5: $spacer * 3,
+);
+
+$negative-spacers: (
+  1: -$spacer * .25,
+  2: -$spacer * .5,
+  3: -$spacer,
+  4: -$spacer * 1.5,
+  5: -$spacer * 3,
+);
+
+$grid-gutter-width: 1.5rem;
+$gutters: (
+  0: 0,
+  1: $spacer * .25,
+  2: $spacer * .5,
+  3: $spacer,
+  4: $spacer * 1.5,
+  5: $spacer * 3,
+);
+
 $table-bg: rgba(255,255,255,.05);
 $table-bg-hover: rgba(255,255,255,.1);
 $table-border-color: rgba(255,255,255,.1);
@@ -43,8 +71,168 @@ $theme-colors: (
   semi: $semi
 );
 
+$theme-colors-rgb: (
+  primary: to-rgb($blue),
+  secondary: to-rgb(#38434e),
+  success: to-rgb($green),
+  info: to-rgb($blue),
+  warning: to-rgb($orange),
+  danger: to-rgb($red),
+  light: to-rgb($gray-300),
+  dark: to-rgb(#0e151d),
+  rare: to-rgb($purple),
+  semi: (0, 0, 0)
+);
+
+$theme-colors-text: (
+  primary: $blue,
+  secondary: #38434e,
+  success: $green,
+  info: $blue,
+  warning: $orange,
+  danger: $red,
+  light: $gray-300,
+  dark: #0e151d
+);
+
+$theme-colors-bg-subtle: (
+  primary: rgba($blue, .1),
+  secondary: rgba(#38434e, .1),
+  success: rgba($green, .1),
+  info: rgba($blue, .1),
+  warning: rgba($orange, .1),
+  danger: rgba($red, .1),
+  light: rgba($gray-300, .1),
+  dark: rgba(#0e151d, .1)
+);
+
+$theme-colors-border-subtle: (
+  primary: rgba($blue, .2),
+  secondary: rgba(#38434e, .2),
+  success: rgba($green, .2),
+  info: rgba($blue, .2),
+  warning: rgba($orange, .2),
+  danger: rgba($red, .2),
+  light: rgba($gray-300, .2),
+  dark: rgba(#0e151d, .2)
+);
+
+// Dark mode color variants
+$theme-colors-text-dark: (
+  primary: lighten($blue, 20%),
+  secondary: lighten(#38434e, 20%),
+  success: lighten($green, 20%),
+  info: lighten($blue, 20%),
+  warning: lighten($orange, 20%),
+  danger: lighten($red, 20%),
+  light: $gray-200,
+  dark: $gray-400
+);
+
+$theme-colors-bg-subtle-dark: (
+  primary: rgba($blue, .15),
+  secondary: rgba(#38434e, .15),
+  success: rgba($green, .15),
+  info: rgba($blue, .15),
+  warning: rgba($orange, .15),
+  danger: rgba($red, .15),
+  light: rgba($gray-300, .15),
+  dark: rgba(#0e151d, .15)
+);
+
+$theme-colors-border-subtle-dark: (
+  primary: rgba($blue, .25),
+  secondary: rgba(#38434e, .25),
+  success: rgba($green, .25),
+  info: rgba($blue, .25),
+  warning: rgba($orange, .25),
+  danger: rgba($red, .25),
+  light: rgba($gray-300, .25),
+  dark: rgba(#0e151d, .25)
+);
+
+$utilities-border-colors: (
+  primary: $blue,
+  secondary: #38434e,
+  success: $green,
+  info: $blue,
+  warning: $orange,
+  danger: $red,
+  light: $gray-300,
+  dark: #0e151d
+);
+
+$utilities-border-subtle: (
+  primary: rgba($blue, .2),
+  secondary: rgba(#38434e, .2),
+  success: rgba($green, .2),
+  info: rgba($blue, .2),
+  warning: rgba($orange, .2),
+  danger: rgba($red, .2),
+  light: rgba($gray-300, .2),
+  dark: rgba(#0e151d, .2)
+);
+
 $body-color: #ccc;
 $body-bg: #0c131b;
+
+$utilities-text-colors: (
+  primary: $blue,
+  secondary: #38434e,
+  success: $green,
+  info: $blue,
+  warning: $orange,
+  danger: $red,
+  light: $gray-300,
+  dark: #0e151d,
+  body: $body-color,
+  muted: $gray-600,
+  black: $black,
+  white: $white
+);
+
+$utilities-text-emphasis-colors: (
+  primary: $blue,
+  secondary: #38434e,
+  success: $green,
+  info: $blue,
+  warning: $orange,
+  danger: $red,
+  light: $gray-300,
+  dark: #0e151d
+);
+
+$utilities-links-underline: (
+  null: underline,
+  always: underline,
+  hover: underline,
+  none: none
+);
+
+$utilities-bg-colors: (
+  primary: $blue,
+  secondary: #38434e,
+  success: $green,
+  info: $blue,
+  warning: $orange,
+  danger: $red,
+  light: $gray-300,
+  dark: #0e151d,
+  body: $body-bg,
+  white: $white,
+  transparent: transparent
+);
+
+$utilities-bg-subtle: (
+  primary: rgba($blue, .1),
+  secondary: rgba(#38434e, .1),
+  success: rgba($green, .1),
+  info: rgba($blue, .1),
+  warning: rgba($orange, .1),
+  danger: rgba($red, .1),
+  light: rgba($gray-300, .1),
+  dark: rgba(#0e151d, .1)
+);
 
 $font-family-sans-serif: "Source Sans Pro";
 $font-family-monospace: "Source Code Pro";

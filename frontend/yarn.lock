@@ -1732,7 +1732,7 @@
   dependencies:
     tslib "^2.3.0"
 
-"@ngtools/webpack@18.2.21":
+"@ngtools/webpack@18.2.21", "@ngtools/webpack@^18.2.0":
   version "18.2.21"
   resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-18.2.21.tgz#c7de5cf90807e33a10d089c5bd86627e7b5a6e3a"
   integrity sha512-mfLT7lXbyJRlsazuPyuF5AGsMcgzRJRwsDlgxFbiy1DBlaF1chRFsXrKYj1gQ/WXQWNcEd11aedU0Rt+iCNDVw==

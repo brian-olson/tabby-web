@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-extraneous-class */
 import { NgModule } from '@angular/core'
-import { BrowserModule, BrowserTransferStateModule } from '@angular/platform-browser'
+import { BrowserModule } from '@angular/platform-browser'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
 import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
 import { RouterModule } from '@angular/router'
 import { ClipboardModule } from '@angular/cdk/clipboard'
-import { TransferHttpCacheModule } from '@nguniversal/common'
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
-import { HttpClientModule } from '@angular/common/http'
+import { HttpClientModule, provideHttpClient, withFetch } from '@angular/common/http'
 
 import { AppComponent } from './app.component'
 import { CommonAppModule } from 'src/common'
@@ -32,12 +31,8 @@ const ROUTES = [
 
 @NgModule({
   imports: [
-    BrowserModule.withServerTransition({
-      appId: 'tabby',
-    }),
-    BrowserTransferStateModule,
+    BrowserModule,
     CommonAppModule.forRoot(),
-    TransferHttpCacheModule,
     BrowserAnimationsModule,
     CommonModule,
     FormsModule,
@@ -50,5 +45,8 @@ const ROUTES = [
     AppComponent,
   ],
   bootstrap: [AppComponent],
+  providers: [
+    provideHttpClient(withFetch()),
+  ],
 })
 export class AppModule { }

@@ -27,7 +27,9 @@ module.exports  = {
     rules: [
       {
         test: /\.[jt]sx?$/,
-        loader: '@ngtools/webpack',
+        use: [{
+          loader: '@ngtools/webpack',
+        }],
       },
       { test: /tabby\/app\/dist/, use: ['script-loader'] },
       {

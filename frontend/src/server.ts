@@ -1,13 +1,13 @@
 import { install } from 'source-map-support'
 import * as throng from 'throng'
 
-import 'zone.js/dist/zone-node'
+import 'zone.js/node'
 import './ssr-polyfills'
 
 import { enableProdMode } from '@angular/core'
-import { ngExpressEngine } from '@nguniversal/express-engine'
+import { CommonEngine } from '@angular/ssr'
 
-import * as express from 'express'
+import express from 'express'
 
 import { join } from 'path'
 
@@ -17,9 +17,7 @@ enableProdMode()
 
 import { AppServerModule } from './app.server.module'
 
-const engine = ngExpressEngine({
-  bootstrap: AppServerModule,
-})
+const commonEngine = new CommonEngine()
 
 const hardlinks = {
   'cwd-detection': 'https://github.com/Eugeny/tabby/wiki/Shell-working-directory-reporting',
@@ -32,8 +30,20 @@ function start () {
 
   const PORT = process.env.PORT ?? 8000
   const DIST_FOLDER = join(process.cwd(), 'build')
+  const INDEX_HTML = join(DIST_FOLDER, 'index.html')
 
-  app.engine('html', engine)
+  app.engine('html', (filePath, options, callback) => {
+    commonEngine
+      .render({
+        bootstrap: AppServerModule,
+        documentFilePath: INDEX_HTML,
+        url: options['req'].url,
+        publicPath: DIST_FOLDER,
+        providers: options['providers'] || [],
+      })
+      .then((html) => callback(null, html))
+      .catch((err) => callback(err))
+  })
 
   app.set('view engine', 'html')
   app.set('views', DIST_FOLDER)

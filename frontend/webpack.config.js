@@ -1,7 +1,7 @@
 const baseConfig = require('./webpack.config.base.js')
 const path = require('path')
 const webpack = require('webpack')
-const { AngularWebpackPlugin } =  require('@ngtools/webpack')
+const { AngularWebpackPlugin } = require('@ngtools/webpack')
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 

@@ -27,6 +27,7 @@ ARG EXTRA_DEPS
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    libffi-dev \
     libmariadb-dev \
     libmariadb-dev-compat \
     pkg-config \
@@ -44,9 +45,9 @@ COPY backend/pyproject.toml backend/poetry.lock* ./
 RUN poetry config virtualenvs.path /venv && \
     poetry config virtualenvs.in-project false
 
-# Install dependencies (generate lock if missing, otherwise use existing)
-RUN if [ ! -f poetry.lock ]; then poetry lock --no-update; fi && \
-    poetry install --no-dev --no-ansi --no-interaction
+# Install dependencies (always regenerate lock to ensure consistency)
+RUN poetry lock --no-update && \
+    poetry install --only main --no-ansi --no-interaction
 
 # Install additional deps (psycopg2-binary, python-jose for Auth0/OIDC)
 RUN poetry run pip install --no-cache-dir psycopg2-binary python-jose[cryptography] $EXTRA_DEPS
