@@ -2,3 +2,12 @@
 .env
 app-dist
 .mypy_cache
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Node modules (root level for playwright)
+node_modules/
+package-lock.json
+frontend/package-lock.json

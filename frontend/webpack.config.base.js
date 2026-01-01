@@ -7,6 +7,13 @@ module.exports  = {
   mode: process.env.DEV ? 'development' : 'production',
   context: __dirname,
   devtool: 'source-map',
+  optimization: {
+    // Disable module concatenation to prevent initialization order issues with JIT mode
+    concatenateModules: false,
+    // Force synchronous module evaluation
+    sideEffects: false,
+    usedExports: false,
+  },
   cache: !process.env.DEV ? false : {
     type: 'filesystem',
   },

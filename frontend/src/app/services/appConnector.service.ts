@@ -4,7 +4,7 @@ import { debounceTime } from 'rxjs/operators'
 import { HttpClient } from '@angular/common/http'
 import { Injectable, Injector, NgZone } from '@angular/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { UpgradeModalComponent } from '../components/upgradeModal.component'
+// UpgradeModalComponent is dynamically imported to avoid circular dependency
 import { Config, Gateway, Version } from 'src/api'
 import { LoginService, CommonService } from 'src/common'
 
@@ -28,7 +28,8 @@ export class SocketProxy {
     port: number
   }
 
-  private appConnector: AppConnectorService
+  private injector: Injector
+  private _appConnector: any  // Lazy loaded to avoid circular dependency
   private loginService: LoginService
   private ngbModal: NgbModal
   private zone: NgZone
@@ -36,10 +37,17 @@ export class SocketProxy {
   constructor (
     injector: Injector,
   ) {
-    this.appConnector = injector.get(AppConnectorService)
+    this.injector = injector
     this.loginService = injector.get(LoginService)
     this.ngbModal = injector.get(NgbModal)
     this.zone = injector.get(NgZone)
+  }
+
+  private get appConnector(): AppConnectorService {
+    if (!this._appConnector) {
+      this._appConnector = this.injector.get(AppConnectorService)
+    }
+    return this._appConnector
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -47,6 +55,8 @@ export class SocketProxy {
     if (!this.loginService.user?.is_pro && this.appConnector.sockets.length > this.appConnector.connectionLimit && !window.sessionStorage['upgrade-skip-active']) {
       let skipped = false
       try {
+        // Dynamically import to avoid circular dependency
+        const { UpgradeModalComponent } = await import('../components/upgradeModal.component')
         skipped = await this.zone.run(() => this.ngbModal.open(UpgradeModalComponent)).result
       } catch { }
       if (!skipped) {

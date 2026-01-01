@@ -63,4 +63,6 @@ class Command(BaseCommand):
             if fs.exists(target):
                 fs.rm(target, recursive=True)
             fs.mkdir(target)
-            fs.put(str(tempdir), target, recursive=True)
+            # Copy each plugin directory individually to avoid nesting tempdir
+            for plugin_dir in tempdir.iterdir():
+                fs.put(str(plugin_dir), f"{target}/{plugin_dir.name}", recursive=True)

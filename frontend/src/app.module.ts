@@ -39,7 +39,10 @@ const ROUTES = [
     FontAwesomeModule,
     ClipboardModule,
     HttpClientModule,
-    RouterModule.forRoot(ROUTES),
+    RouterModule.forRoot(ROUTES, {
+      // Disable features that use Navigation API to prevent JIT compilation errors
+      enableViewTransitions: false,
+    }),
   ],
   declarations: [
     AppComponent,
@@ -47,6 +50,8 @@ const ROUTES = [
   bootstrap: [AppComponent],
   providers: [
     provideHttpClient(withFetch()),
+    // Provide Navigation as null to prevent JIT compilation errors
+    { provide: 'Navigation', useValue: (typeof window !== 'undefined' ? window.navigation : null) },
   ],
 })
 export class AppModule { }

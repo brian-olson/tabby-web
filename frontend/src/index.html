@@ -25,6 +25,20 @@
     <meta property="theme-color" content="#0c131b">
 
     <meta property="x-tabby-web-backend-url" content="{{backendURL}}">
+
+    <!-- Navigation API Polyfill - MUST be before any Angular code loads -->
+    <script>
+      if (typeof window !== 'undefined' && !window.navigation) {
+        window.navigation = {
+          currentEntry: null,
+          navigate: function() { return { committed: Promise.resolve(), finished: Promise.resolve() }; },
+          back: function() { return { committed: Promise.resolve(), finished: Promise.resolve() }; },
+          forward: function() { return { committed: Promise.resolve(), finished: Promise.resolve() }; },
+          addEventListener: function() {},
+          removeEventListener: function() {}
+        };
+      }
+    </script>
   </head>
   <body>
     <app></app>

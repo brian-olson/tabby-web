@@ -7,8 +7,10 @@ COPY frontend/webpack* frontend/tsconfig.json ./
 COPY frontend/assets assets
 COPY frontend/src src
 COPY frontend/theme theme
-RUN yarn run build
-RUN yarn run build:server
+RUN NODE_ENV=production yarn run build
+RUN NODE_ENV=production yarn run build:server
+# Replace {{backendURL}} template variable with empty string for same-origin API calls
+RUN sed -i 's/{{backendURL}}//' /app/build/index.html
 
 FROM node:22-alpine AS frontend
 WORKDIR /app
@@ -49,6 +51,10 @@ RUN poetry config virtualenvs.path /venv && \
 RUN poetry lock --no-update && \
     poetry install --only main --no-ansi --no-interaction
 
+# Copy venv contents to fixed locations (glob requires shell)
+RUN /bin/bash -c 'cp -r /venv/tabby-web-*/lib/python3.12/site-packages /venv/site-packages' && \
+    /bin/bash -c 'cp -r /venv/tabby-web-*/bin /venv/bin'
+
 # Install additional deps (psycopg2-binary, python-jose for Auth0/OIDC)
 RUN poetry run pip install --no-cache-dir psycopg2-binary python-jose[cryptography] $EXTRA_DEPS
 
@@ -64,35 +70,42 @@ RUN APP_DIST_STORAGE=file:///app-dist /venv/*/bin/python ./manage.py add_version
 
 # ----
 
-FROM gcr.io/distroless/python3-debian12:nonroot AS backend
+FROM python:3.12-slim AS backend
 
 ENV APP_DIST_STORAGE=file:///app-dist
 ENV PYTHONUNBUFFERED=1
+ENV VIRTUAL_ENV=/venv
+
+# Create non-root user
+RUN useradd -m -u 1000 -s /bin/bash appuser
 
 # Copy Python virtual environment
-COPY --from=build-backend /venv /venv
+COPY --from=build-backend --chown=appuser:appuser /venv /venv
+
+# Poetry venv is at /venv/tabby-web-HASH-py3.12/ with copied bin and site-packages
 
 # Copy application
-COPY --from=build-backend /app /app
+COPY --from=build-backend --chown=appuser:appuser /app /app
 
 # Copy app-dist
-COPY --from=build-backend /app-dist /app-dist
+COPY --from=build-backend --chown=appuser:appuser /app-dist /app-dist
 
-# Copy MariaDB client libraries
+# Copy MariaDB client libraries and SSL dependencies
 COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libmariadb.so.3 /usr/lib/x86_64-linux-gnu/
 COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/
 COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/
+COPY --from=build-backend /usr/lib/x86_64-linux-gnu/libzstd.so.1 /usr/lib/x86_64-linux-gnu/
 
 # Copy entrypoint script
-COPY backend/entrypoint.py /app/
+COPY --chown=appuser:appuser backend/entrypoint.py /app/
 
 WORKDIR /app
 
-# Set Python path to find venv
-ENV PATH="/venv/lib/python3.12/site-packages:$PATH"
-ENV PYTHONPATH="/venv/lib/python3.12/site-packages"
+# Set Python path to find venv packages (copied during build)
+ENV PYTHONPATH="/venv/site-packages:/app"
 
-# Run as non-root user (distroless default)
-USER nonroot
+# Run as non-root user
+USER appuser
 
-ENTRYPOINT ["/venv/bin/python3.12", "/app/entrypoint.py"]
+# Use system python3 (in slim images, it's at /usr/local/bin)
+ENTRYPOINT ["/usr/local/bin/python3", "/app/entrypoint.py"]

@@ -57,9 +57,11 @@ def wait_for_database() -> bool:
 def run_migrations():
     """Run Django migrations."""
     print("Running database migrations...", flush=True)
-    venv_python = "/venv/bin/python3.12"
+    # Use system python with PYTHONPATH set to venv site-packages
+    # In debian-slim images, python3 is at /usr/local/bin
+    system_python = "/usr/local/bin/python3"
     result = subprocess.run(
-        [venv_python, "manage.py", "migrate", "--noinput"],
+        [system_python, "manage.py", "migrate", "--noinput"],
         cwd="/app",
         check=False
     )
@@ -72,9 +74,12 @@ def run_migrations():
 def start_gunicorn():
     """Start Gunicorn server."""
     print("Starting Gunicorn...", flush=True)
-    venv_gunicorn = "/venv/bin/gunicorn"
+    # Use gunicorn from venv via system python -m
+    # In debian-slim images, python3 is at /usr/local/bin
+    system_python = "/usr/local/bin/python3"
     os.chdir("/app")
-    os.execv(venv_gunicorn, [venv_gunicorn])
+    # Execute gunicorn module via python -m
+    os.execv(system_python, [system_python, "-m", "gunicorn"])
 
 
 def main():

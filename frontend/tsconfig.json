@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": "src/",
     "module": "esnext",
-    "target": "es6",
+    "target": "es2022",
     "moduleResolution": "node",
     "noImplicitAny": false,
     "removeComments": false,
@@ -20,13 +20,17 @@
     "strictNullChecks": true,
     "lib": [
       "dom",
-      "es5",
-      "es6",
-      "es7"
+      "es2022"
     ],
     "paths": {
       "src/*": ["./*"]
     }
+  },
+  "angularCompilerOptions": {
+    "enableIvy": true,
+    "fullTemplateTypeCheck": false,
+    "strictInjectionParameters": false,
+    "strictTemplates": false
   },
   "include": ["src"]
 }
