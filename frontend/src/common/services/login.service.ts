@@ -1,4 +1,4 @@
-import { AsyncSubject } from 'rxjs'
+import { BehaviorSubject, firstValueFrom, filter, take } from 'rxjs'
 import { HttpClient } from '@angular/common/http'
 import { Injectable } from '@angular/core'
 import { User } from '../../api'
@@ -6,8 +6,9 @@ import { User } from '../../api'
 
 @Injectable({ providedIn: 'root' })
 export class LoginService {
-  user: User | null
-  ready$ = new AsyncSubject<void>()
+  user: User | null = null
+  private _ready$ = new BehaviorSubject<boolean>(false)
+  ready$ = this._ready$.pipe(filter(ready => ready), take(1))
 
   constructor (private http: HttpClient) {
     this.init()
@@ -17,17 +18,17 @@ export class LoginService {
     if (!this.user) {
       return
     }
-    await this.http.put('/api/1/user', this.user).toPromise()
+    await firstValueFrom(this.http.put('/api/1/user', this.user))
   }
 
   private async init () {
     try {
-      this.user = (await this.http.get('/api/1/user').toPromise()) as User
+      this.user = await firstValueFrom(this.http.get<User>('/api/1/user'))
     } catch {
+      // 403/401 means not authenticated - this is expected
       this.user = null
     }
 
-    this.ready$.next()
-    this.ready$.complete()
+    this._ready$.next(true)
   }
 }

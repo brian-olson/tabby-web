@@ -1,4 +1,5 @@
-import { Component } from '@angular/core'
+import { Component, ChangeDetectorRef } from '@angular/core'
+import { firstValueFrom } from 'rxjs'
 import { LoginService, CommonService } from 'src/common'
 
 import { faGithub, faGitlab, faGoogle, faMicrosoft } from '@fortawesome/free-brands-svg-icons'
@@ -22,11 +23,13 @@ export class LoginComponent {
   constructor (
     private loginService: LoginService,
     public commonService: CommonService,
+    private cdr: ChangeDetectorRef,
   ) { }
 
   async ngOnInit () {
-    await this.loginService.ready$.toPromise()
+    await firstValueFrom(this.loginService.ready$)
     this.loggedIn = !!this.loginService.user
     this.ready = true
+    this.cdr.detectChanges()
   }
 }

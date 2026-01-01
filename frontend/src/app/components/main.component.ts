@@ -8,7 +8,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { SettingsModalComponent } from './settingsModal.component'
 import { ConfigModalComponent } from './configModal.component'
 import { ConfigService, LoginService } from 'src/common'
-import { combineLatest } from 'rxjs'
+import { combineLatest, firstValueFrom } from 'rxjs'
 import { Config, Version } from 'src/api'
 
 @Component({
@@ -56,7 +56,7 @@ export class MainComponent {
   }
 
   async ngAfterViewInit () {
-    await this.loginService.ready$.toPromise()
+    await firstValueFrom(this.loginService.ready$)
 
     // Require authentication - redirect to login if not logged in
     if (!this.loginService.user) {
@@ -64,14 +64,14 @@ export class MainComponent {
       return
     }
 
-    combineLatest(
+    combineLatest([
       this.config.activeConfig$,
       this.config.activeVersion$
-    ).subscribe(([config, version]) => {
+    ]).subscribe(([config, version]) => {
       this.reloadApp(config, version)
     })
 
-    await this.config.ready$.toPromise()
+    await firstValueFrom(this.config.ready$)
     await this.config.selectDefaultConfig()
   }
 
