@@ -58,6 +58,12 @@ export class MainComponent {
   async ngAfterViewInit () {
     await this.loginService.ready$.toPromise()
 
+    // Require authentication - redirect to login if not logged in
+    if (!this.loginService.user) {
+      window.location.href = '/login'
+      return
+    }
+
     combineLatest(
       this.config.activeConfig$,
       this.config.activeVersion$

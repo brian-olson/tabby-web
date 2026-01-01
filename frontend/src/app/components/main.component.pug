@@ -38,10 +38,6 @@
         fa-icon.me-2([icon]='_warningIcon', [fixedWidth]='true')
         div
             div You've last used this config with Tabby v{{missingVersion}}, which is no longer available on this server.
-    .alert.alert-warning.d-flex.border-0.m-0(*ngIf='showApp && !loginService.user')
-        fa-icon.me-2([icon]='_saveIcon', [fixedWidth]='true')
-        div
-            div To save profiles and settings, #[a(href='/login') log in].
     .alert.alert-warning.d-flex.border-0.m-0(*ngIf='showDiscontinuationWarning')
         fa-icon.me-2([icon]='_warningIcon', [fixedWidth]='true')
         div

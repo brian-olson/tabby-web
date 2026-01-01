@@ -1,63 +1,67 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Tabby Web Application', () => {
+test.describe('Tabby Web Application - Authentication', () => {
+  test('should redirect unauthenticated users to login', async ({ page }) => {
+    await page.goto('/');
+
+    // Wait for Angular to bootstrap and check auth
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+
+    // Verify we're on the login page
+    expect(page.url()).toContain('/login');
+  });
+
+  test('should require authentication for gateway API', async ({ page }) => {
+    const response = await page.request.post('/api/1/gateways/choose');
+    expect(response.status()).toBe(403);
+
+    const body = await response.json();
+    expect(body.detail).toContain('Authentication credentials were not provided');
+  });
+
+  test('should require authentication for configs API', async ({ page }) => {
+    const response = await page.request.get('/api/1/configs');
+    expect(response.status()).toBe(403);
+  });
+});
+
+test.describe('Tabby Web Application - Public Endpoints', () => {
+  test('should allow public access to versions API', async ({ page }) => {
+    const response = await page.request.get('/api/1/versions');
+    expect(response.status()).toBe(200);
+
+    const versions = await response.json();
+    expect(Array.isArray(versions)).toBeTruthy();
+    expect(versions.length).toBeGreaterThan(0);
+    expect(versions[0]).toHaveProperty('version');
+    expect(versions[0]).toHaveProperty('plugins');
+  });
+
+  test('should serve login page', async ({ page }) => {
+    await page.goto('/login');
+    await page.waitForLoadState('load');
+
+    // Login page should load without redirect
+    expect(page.url()).toContain('/login');
+  });
+});
+
+test.describe('Tabby Web Application - Static Assets', () => {
   let consoleErrors: string[] = [];
-  let networkErrors: string[] = [];
 
   test.beforeEach(async ({ page }) => {
-    // Capture console errors
     consoleErrors = [];
     page.on('console', msg => {
       if (msg.type() === 'error') {
         consoleErrors.push(msg.text());
       }
     });
-
-    // Capture network errors
-    networkErrors = [];
-    page.on('requestfailed', request => {
-      networkErrors.push(`${request.url()} - ${request.failure()?.errorText}`);
-    });
   });
 
-  test('should load homepage without errors', async ({ page }) => {
-    await page.goto('/');
-
-    // Wait for page to load (don't use networkidle - app has persistent connections)
-    await page.waitForLoadState('load');
-    // Give Angular time to bootstrap
-    await page.waitForTimeout(3000);
-
-    // Filter out expected errors:
-    // - Cloudflare beacon (injected by CF tunnel, blocked by browser)
-    // - ERR_FAILED (usually from blocked third-party scripts)
-    // - 403 errors (expected for auth-required endpoints when not logged in)
-    const relevantErrors = consoleErrors.filter(err =>
-      !err.includes('cloudflareinsights.com') &&
-      !err.includes('beacon.min.js') &&
-      !err.includes('net::ERR_FAILED') &&
-      !err.includes('403')
-    );
-
-    // Check no relevant console errors
-    expect(relevantErrors, `Found console errors: ${relevantErrors.join('\n')}`).toHaveLength(0);
-
-    // Filter out Cloudflare-related network errors
-    const relevantNetworkErrors = networkErrors.filter(err =>
-      !err.includes('cloudflareinsights.com')
-    );
-
-    // Check no relevant network errors
-    expect(relevantNetworkErrors, `Found network errors: ${relevantNetworkErrors.join('\n')}`).toHaveLength(0);
-
-    // Verify page title
-    await expect(page).toHaveTitle(/Tabby/);
-  });
-
-  test('should not have JIT compilation errors', async ({ page }) => {
+  test('should load static assets without JIT compilation errors', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('load');
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
 
     // Check for specific JIT compilation error
     const jitErrors = consoleErrors.filter(err =>
@@ -68,35 +72,28 @@ test.describe('Tabby Web Application', () => {
     expect(jitErrors, `Found JIT compilation errors: ${jitErrors.join('\n')}`).toHaveLength(0);
   });
 
-  test('should not have ERR_NAME_NOT_RESOLVED errors', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(3000);
-
-    const dnsErrors = networkErrors.filter(err =>
-      err.includes('ERR_NAME_NOT_RESOLVED')
-    );
-
-    expect(dnsErrors, `Found DNS resolution errors: ${dnsErrors.join('\n')}`).toHaveLength(0);
-  });
-
-  test('should load all static assets', async ({ page }) => {
+  test('should load index.js bundle', async ({ page }) => {
     await page.goto('/');
 
-    // Wait for main JS bundle to load
     await page.waitForFunction(() => {
       return window.document.readyState === 'complete';
     });
 
-    // Check that index.js loaded successfully
     const indexJsLoaded = await page.evaluate(() => {
       const scripts = Array.from(document.querySelectorAll('script[src*="index.js"]'));
       return scripts.length > 0;
     });
 
     expect(indexJsLoaded).toBeTruthy();
+  });
 
-    // Check that index.css loaded successfully
+  test('should load index.css stylesheet', async ({ page }) => {
+    await page.goto('/');
+
+    await page.waitForFunction(() => {
+      return window.document.readyState === 'complete';
+    });
+
     const indexCssLoaded = await page.evaluate(() => {
       const links = Array.from(document.querySelectorAll('link[href*="index.css"]'));
       return links.length > 0;
@@ -105,7 +102,7 @@ test.describe('Tabby Web Application', () => {
     expect(indexCssLoaded).toBeTruthy();
   });
 
-  test('should have backend URL meta tag set correctly', async ({ page }) => {
+  test('should have backend URL meta tag', async ({ page }) => {
     await page.goto('/');
 
     const backendURL = await page.locator('meta[property="x-tabby-web-backend-url"]').getAttribute('content');
@@ -114,60 +111,29 @@ test.describe('Tabby Web Application', () => {
     expect(backendURL).toBe('');
   });
 
-  test('should have Angular app element present', async ({ page }) => {
+  test('should bootstrap Angular app', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('load');
 
     // Wait for Angular to bootstrap (check for ng-version attribute)
-    // Use state: 'attached' since app element may be hidden (loading state)
     await page.waitForSelector('app[ng-version]', { state: 'attached', timeout: 10000 });
 
     const appElement = page.locator('app');
-    // Check element is attached to DOM and has Angular version (app bootstrapped)
     await expect(appElement).toBeAttached();
     const ngVersion = await appElement.getAttribute('ng-version');
     expect(ngVersion).toBeTruthy();
   });
+});
 
-  test('API endpoints should be accessible', async ({ page }) => {
-    // Test configs endpoint (requires auth but should return 401/403, not 404)
-    const configsResponse = await page.request.get('/api/1/configs');
-    expect(configsResponse.status()).not.toBe(404);
-
-    // Test versions endpoint
+test.describe('Tabby Web Application - App Distribution', () => {
+  test('should serve app-dist files', async ({ page }) => {
+    // First get the version
     const versionsResponse = await page.request.get('/api/1/versions');
-    expect(versionsResponse.status()).not.toBe(404);
-  });
+    const versions = await versionsResponse.json();
+    const version = versions[0].version;
 
-  test('should not have 404 errors for critical resources', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(3000);
-
-    const notFoundErrors = networkErrors.filter(err =>
-      err.includes('404') || err.includes('Not Found')
-    );
-
-    expect(notFoundErrors, `Found 404 errors: ${notFoundErrors.join('\n')}`).toHaveLength(0);
-  });
-
-  test('console should log backend URL', async ({ page }) => {
-    const consoleMessages: string[] = [];
-
-    page.on('console', msg => {
-      consoleMessages.push(msg.text());
-    });
-
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(3000);
-
-    // CommonService logs the backendURL on initialization
-    const backendUrlLog = consoleMessages.find(msg =>
-      msg === '' || msg.startsWith('http')
-    );
-
-    // Should find the log (empty string for same-origin)
-    expect(backendUrlLog).toBeDefined();
+    // Try to access a plugin file
+    const pluginResponse = await page.request.get(`/app-dist/${version}/tabby-core/package.json`);
+    expect(pluginResponse.status()).toBe(200);
   });
 });

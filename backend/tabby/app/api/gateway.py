@@ -3,6 +3,7 @@ import random
 from rest_framework import fields, status
 from rest_framework.exceptions import APIException
 from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.serializers import ModelSerializer
 from ..gateway import GatewayAdminConnection
@@ -30,6 +31,7 @@ class NoGatewaysError(APIException):
 class ChooseGatewayViewSet(RetrieveModelMixin, GenericViewSet):
     queryset = Gateway.objects.filter(enabled=True)
     serializer_class = GatewaySerializer
+    permission_classes = [IsAuthenticated]
 
     async def _authorize_client(self, gw):
         c = GatewayAdminConnection(gw)
