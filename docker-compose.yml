@@ -10,7 +10,15 @@ services:
         - DATABASE_URL=mysql://root:123@db/tabby
         - DEBUG=False
         - DOCKERIZE_ARGS="-wait tcp://db:3306 -timeout 60s"
-        # OAuth providers - only configured providers will appear on login page
+        #
+        # Authentication Options (choose one):
+        #
+        # Option 1: Proxy Authentication (for use behind an authenticating reverse proxy)
+        # Enable when running behind a proxy that sets X-Auth-User-Email headers
+        # - PROXY_AUTH_ENABLED=true
+        #
+        # Option 2: OAuth Providers (direct authentication)
+        # Only configured providers will appear on login page.
         # Uncomment and set credentials for providers you want to enable:
         # - SOCIAL_AUTH_GITHUB_KEY=your_github_client_id
         # - SOCIAL_AUTH_GITHUB_SECRET=your_github_client_secret
@@ -20,6 +28,7 @@ services:
         # - SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=your_google_client_secret
         # - SOCIAL_AUTH_MICROSOFT_GRAPH_KEY=your_microsoft_client_id
         # - SOCIAL_AUTH_MICROSOFT_GRAPH_SECRET=your_microsoft_client_secret
+        #
         # - APP_DIST_STORAGE="file:///app-dist"
 
     db:
